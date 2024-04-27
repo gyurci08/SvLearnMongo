@@ -11,7 +11,7 @@ db.documents.insert([
 // Create a user with read and write privileges for the database
 db.createUser({
     user: 'SvLearnMongoUser',
-    pwd: 'SvLearnMongoP@ss',
+    pwd: 'SvLearnMongoP0ss',
     roles: [
         { role: 'readWrite', db: 'SvLearnMongo' }
     ]
