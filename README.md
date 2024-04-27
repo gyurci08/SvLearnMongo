@@ -1,38 +1,103 @@
-# create-svelte
+1. Dependency:
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+   Insert mongodb as dependency, then installs it.
 
-## Creating a project
+   Dotenv loads the .env eviroment file
 
-If you're seeing this, you've probably already done this step. Congrats!
+   ```
+   npm install --save mongodb
+   npm install dotenv
+   ```
+2. File: .env
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+   Hidden informations which should not be committed on git
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+   ```.env
+   MONGO_URL="mongodb://SvLearnMongoUser:SvLearnMongoP0ss@localhost:27017/SvLearnMongo"
+   ```
+3. Folder: src/db
+4. Alias: svelte.config.js
 
-## Developing
+   Creating alias for folder
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+   ```js
+   kit: {
+   		adapter: adapter(),
+   		alias: {
+   			'$db': "./src/db"
+   		}
+   	}
+   ```
+5. File: src/db/mongo.ts
 
-```bash
-npm run dev
+   ```ts
+   import {MongoClient} from "mongodb";
+   import {MONGO_URL} from "$env/static/private";
+   
+   const client = new MongoClient(MONGO_URL);
+   
+   export function start_mongo(): Promise<MongoClient>{
+       console.log("Starting Mongo connection...")
+       return client.connect();
+   }
+   
+   export default client.db()
+   ```
+6. File: src/hooks.server.ts
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+   ```ts
+   import {start_mongo} from '$db/mongo';
+   
+   start_mongo().then(()=> { console.log("Mongo started."); })
+   ```
+7. File: src/db/sampleCollection.ts
 
-## Building
+   This is the db schema
 
-To create a production version of your app:
+   ```ts
+   import db from "$db/mongo"
+   
+   // This is the database's table
+   export const sampleCollection = db.collection('sampleCollection');
+   ```
+8. File: +page.server.ts
 
-```bash
-npm run build
-```
+   This is ".server." because it needs to run only on the server! Server side!
 
-You can preview the production build with `npm run preview`.
+   Projection is what should be seen in the query: 0 - false, 1 - true
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+   ```ts
+   import {documents} from "$db/documents";
+   import type {PageServerLoad} from "./$types";
+   
+   export const load: PageServerLoad = async function() {
+       const data = await documents.find({}, {limit: 50, projection: {'_id': 0,'name': 1}}).toArray();
+       console.log("Data: ", data);
+       return { documents: data }
+   }
+   ```
+9. File: +page.svelte
+
+   Client side!
+
+   ```html
+   <script lang="ts">
+       import type {PageData} from "./$types";
+   
+       export let data: PageData;
+       $:({documents} = data);
+   </script>
+   
+   
+   
+   <h1>Welcome to SvelteKit</h1>
+   <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+   
+   <section>
+       {#each documents as document}
+               <article>
+                   <p>{document.name}</p>
+               </article>
+       {/each }
+   </section>
+   ```
